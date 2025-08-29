@@ -12,11 +12,24 @@
     height: 100vh;
     background: #222;
     font-family: sans-serif;
+    overflow: hidden;
+  }
+  #fade {
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:black;
+    z-index:999;
+    opacity:1;
+    transition: opacity 6s;
   }
   #puzzle {
     position: relative;
     width: 400px; 
     height: 400px;
+    z-index:1;
   }
   .tile {
     width: 100%;
@@ -30,22 +43,34 @@
 </head>
 <body>
 
+<div id="fade"></div>
 <div id="puzzle"></div>
 
 <script>
 const puzzle = document.getElementById('puzzle');
+const fade = document.getElementById('fade');
 let tiles = [];
-let empty = {x: 0, y: 0}; // vai ser definido depois
+let empty = {x: 0, y: 0};
 let puzzleConfig = null;
+let audioFiles = [];
+let audioCount = 0;
 
 // Função principal
 async function initPuzzle() {
-  const response = await fetch('puzzle.json'); // Lê o JSON
+  // Fade in inicial
+  setTimeout(() => {
+    fade.style.opacity = 0;
+  }, 50);
+
+  const response = await fetch('puzzle.json');
   puzzleConfig = await response.json();
 
   const size = puzzleConfig.tamanho;
   const pieceSize = 400 / size;
   empty = {x: size-1, y: size-1};
+
+  // Carrega os arquivos de áudio automaticamente
+  await loadAudioFiles();
 
   // Cria as peças
   for (let i = 0; i < size*size -1; i++) {
@@ -60,7 +85,7 @@ async function initPuzzle() {
     tile.dataset.y = y;
     tile.style.backgroundImage = `url('${puzzleConfig.imagem}')`;
     tile.style.backgroundPosition = `-${x * pieceSize}px -${y * pieceSize}px`;
-    tile.addEventListener('click', () => moveTile(tile, pieceSize));
+    tile.addEventListener('click', () => moveTile(tile, pieceSize, size));
     puzzle.appendChild(tile);
     tiles.push(tile);
   }
@@ -68,7 +93,25 @@ async function initPuzzle() {
   shuffle(pieceSize, size);
 }
 
-function moveTile(tile, pieceSize) {
+// Carrega todos os arquivos rockXX.mp3 existentes
+async function loadAudioFiles() {
+  let i = 1;
+  while(true) {
+    const audioPath = `assets/audiorock/rock${String(i).padStart(2,'0')}.mp3`;
+    try {
+      // Testa se o arquivo existe
+      const res = await fetch(audioPath, {method: 'HEAD'});
+      if(!res.ok) break;
+      audioFiles.push(audioPath);
+      i++;
+    } catch(e) {
+      break;
+    }
+  }
+  audioCount = audioFiles.length;
+}
+
+function moveTile(tile, pieceSize, size) {
   const x = parseInt(tile.dataset.x);
   const y = parseInt(tile.dataset.y);
   if ((Math.abs(empty.x - x) + Math.abs(empty.y - y)) === 1) {
@@ -76,6 +119,15 @@ function moveTile(tile, pieceSize) {
     [tile.dataset.x, tile.dataset.y] = [empty.x, empty.y];
     empty.x = x;
     empty.y = y;
+
+    // Toca áudio aleatório
+    if(audioCount > 0) {
+      const audio = new Audio(audioFiles[Math.floor(Math.random()*audioCount)]);
+      audio.play();
+    }
+
+    // Checa se o quebra-cabeça está completo
+    checkComplete(size, pieceSize);
   }
 }
 
@@ -87,7 +139,24 @@ function shuffle(pieceSize, size) {
       return (Math.abs(empty.x - x) + Math.abs(empty.y - y)) === 1;
     });
     const tile = movable[Math.floor(Math.random()*movable.length)];
-    moveTile(tile, pieceSize);
+    moveTile(tile, pieceSize, size);
+  }
+}
+
+// Verifica se todas as peças estão no lugar correto
+function checkComplete(size, pieceSize) {
+  let complete = true;
+  for (let i = 0; i < tiles.length; i++) {
+    const x = i % size;
+    const y = Math.floor(i / size);
+    const tile = tiles[i];
+    if(parseInt(tile.dataset.x) !== x || parseInt(tile.dataset.y) !== y) {
+      complete = false;
+      break;
+    }
+  }
+  if(complete) {
+    fade.style.opacity = 1; // Fade out final
   }
 }
 
