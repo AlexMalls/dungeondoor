@@ -17,6 +17,8 @@
     position: relative;
     width: 400px; 
     height: 400px;
+    opacity: 0; /* inicia invisível */
+    transition: opacity 6s; /* fade in de 6 segundos */
   }
   .tile {
     width: 100%;
@@ -25,6 +27,11 @@
     cursor: pointer;
     transition: transform 0.2s;
     position: absolute;
+  }
+
+  /* Classe para fade in */
+  .fade-in {
+    opacity: 1 !important;
   }
 </style>
 </head>
@@ -35,12 +42,12 @@
 <script>
 const puzzle = document.getElementById('puzzle');
 let tiles = [];
-let empty = {x: 0, y: 0}; // vai ser definido depois
+let empty = {x: 0, y: 0};
 let puzzleConfig = null;
 
 // Função principal
 async function initPuzzle() {
-  const response = await fetch('puzzle.json'); // Lê o JSON
+  const response = await fetch('puzzle.json'); 
   puzzleConfig = await response.json();
 
   const size = puzzleConfig.tamanho;
@@ -66,6 +73,11 @@ async function initPuzzle() {
   }
 
   shuffle(pieceSize, size);
+
+  // Aplica o fade in
+  setTimeout(() => {
+    puzzle.classList.add('fade-in');
+  }, 50); // pequeno delay para garantir que a transição ocorra
 }
 
 function moveTile(tile, pieceSize) {
