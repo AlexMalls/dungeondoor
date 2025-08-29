@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quebra-Cabeça Deslizante</title>
+<title>Quebra-Cabeça de Imagem</title>
 <style>
   body {
     display: flex;
@@ -14,23 +14,14 @@
     font-family: sans-serif;
   }
   #puzzle {
-    display: grid;
-    grid-template-columns: repeat(4, 100px);
-    grid-template-rows: repeat(4, 100px);
-    gap: 2px;
-    background-image: url('https://picsum.photos/400'); /* Troque a imagem aqui */
-    background-size: cover;
     position: relative;
+    width: 400px; 
+    height: 400px;
   }
   .tile {
-    width: 100px;
-    height: 100px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgba(255,255,255,0.8);
-    font-size: 24px;
-    font-weight: bold;
+    width: 100%;
+    height: 100%;
+    background-size: 400px 400px;
     cursor: pointer;
     transition: transform 0.2s;
     position: absolute;
@@ -42,39 +33,53 @@
 <div id="puzzle"></div>
 
 <script>
-const size = 4; // 4x4
+const puzzle = document.getElementById('puzzle');
 let tiles = [];
+let empty = {x: 0, y: 0}; // vai ser definido depois
+let puzzleConfig = null;
 
-function createTiles() {
-  const puzzle = document.getElementById('puzzle');
-  tiles = [];
-  for (let i = 0; i < size*size - 1; i++) {
+// Função principal
+async function initPuzzle() {
+  const response = await fetch('puzzle.json'); // Lê o JSON
+  puzzleConfig = await response.json();
+
+  const size = puzzleConfig.tamanho;
+  const pieceSize = 400 / size;
+  empty = {x: size-1, y: size-1};
+
+  // Cria as peças
+  for (let i = 0; i < size*size -1; i++) {
+    const x = i % size;
+    const y = Math.floor(i / size);
     const tile = document.createElement('div');
     tile.classList.add('tile');
-    tile.textContent = i + 1;
-    tile.style.transform = `translate(${(i % size) * 100}px, ${Math.floor(i / size) * 100}px)`;
-    tile.dataset.x = i % size;
-    tile.dataset.y = Math.floor(i / size);
-    tile.addEventListener('click', () => moveTile(tile));
+    tile.style.width = `${pieceSize}px`;
+    tile.style.height = `${pieceSize}px`;
+    tile.style.transform = `translate(${x * pieceSize}px, ${y * pieceSize}px)`;
+    tile.dataset.x = x;
+    tile.dataset.y = y;
+    tile.style.backgroundImage = `url('${puzzleConfig.imagem}')`;
+    tile.style.backgroundPosition = `-${x * pieceSize}px -${y * pieceSize}px`;
+    tile.addEventListener('click', () => moveTile(tile, pieceSize));
     puzzle.appendChild(tile);
     tiles.push(tile);
   }
+
+  shuffle(pieceSize, size);
 }
 
-let empty = {x: size-1, y: size-1};
-
-function moveTile(tile) {
+function moveTile(tile, pieceSize) {
   const x = parseInt(tile.dataset.x);
   const y = parseInt(tile.dataset.y);
   if ((Math.abs(empty.x - x) + Math.abs(empty.y - y)) === 1) {
-    tile.style.transform = `translate(${empty.x * 100}px, ${empty.y * 100}px)`;
+    tile.style.transform = `translate(${empty.x * pieceSize}px, ${empty.y * pieceSize}px)`;
     [tile.dataset.x, tile.dataset.y] = [empty.x, empty.y];
     empty.x = x;
     empty.y = y;
   }
 }
 
-function shuffle() {
+function shuffle(pieceSize, size) {
   for (let i = 0; i < 200; i++) {
     const movable = tiles.filter(t => {
       const x = parseInt(t.dataset.x);
@@ -82,12 +87,12 @@ function shuffle() {
       return (Math.abs(empty.x - x) + Math.abs(empty.y - y)) === 1;
     });
     const tile = movable[Math.floor(Math.random()*movable.length)];
-    moveTile(tile);
+    moveTile(tile, pieceSize);
   }
 }
 
-createTiles();
-shuffle();
+// Inicia
+initPuzzle();
 </script>
 
 </body>
