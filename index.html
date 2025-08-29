@@ -25,7 +25,7 @@
     height: 100%;
     background-size: 400px 400px;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.6s; /* movimento suave */
     position: absolute;
   }
 
@@ -72,6 +72,8 @@ async function initPuzzle() {
     tile.style.transform = `translate(${x * pieceSize}px, ${y * pieceSize}px)`;
     tile.dataset.x = x;
     tile.dataset.y = y;
+    tile.dataset.correctX = x; // posição correta
+    tile.dataset.correctY = y;
     tile.style.backgroundImage = `url('${puzzleConfig.imagem}')`;
     tile.style.backgroundPosition = `-${x * pieceSize}px -${y * pieceSize}px`;
     tile.addEventListener('click', () => moveTile(tile, pieceSize));
@@ -84,9 +86,10 @@ async function initPuzzle() {
   // Aplica o fade in
   setTimeout(() => {
     puzzle.classList.add('fade-in');
-  }, 50); // pequeno delay para garantir que a transição ocorra
+  }, 50); 
 }
 
+// Move peça com som
 function moveTile(tile, pieceSize) {
   const x = parseInt(tile.dataset.x);
   const y = parseInt(tile.dataset.y);
@@ -104,6 +107,7 @@ function moveTile(tile, pieceSize) {
   }
 }
 
+// Embaralha as peças
 function shuffle(pieceSize, size) {
   for (let i = 0; i < 200; i++) {
     const movable = tiles.filter(t => {
@@ -116,7 +120,28 @@ function shuffle(pieceSize, size) {
   }
 }
 
-// Inicia
+// Função para reorganizar peças suavemente
+function solvePuzzle() {
+  const pieceSize = 400 / puzzleConfig.tamanho;
+  tiles.forEach(tile => {
+    const correctX = parseInt(tile.dataset.correctX);
+    const correctY = parseInt(tile.dataset.correctY);
+    tile.style.transform = `translate(${correctX * pieceSize}px, ${correctY * pieceSize}px)`;
+    tile.dataset.x = correctX;
+    tile.dataset.y = correctY;
+  });
+  empty.x = puzzleConfig.tamanho - 1;
+  empty.y = puzzleConfig.tamanho - 1;
+}
+
+// Listener de teclado para Ctrl + Alt + End
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.altKey && e.key === 'End') {
+    solvePuzzle();
+  }
+});
+
+// Inicia o puzzle
 initPuzzle();
 </script>
 
