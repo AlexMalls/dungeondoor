@@ -12,18 +12,6 @@
     height: 100vh;
     background: #222;
     font-family: sans-serif;
-    overflow: hidden;
-  }
-  #fade {
-    position: fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:black;
-    z-index:999;
-    opacity:1;
-    transition: opacity 6s;
   }
   #puzzle {
     position: relative;
@@ -42,26 +30,16 @@
 </head>
 <body>
 
-<div id="fade"></div>
 <div id="puzzle"></div>
 
 <script>
 const puzzle = document.getElementById('puzzle');
-const fade = document.getElementById('fade');
 let tiles = [];
 let empty = {x: 0, y: 0}; // vai ser definido depois
 let puzzleConfig = null;
-let audioFiles = [];
-let audioCount = 0;
 
 // Função principal
 async function initPuzzle() {
-  // Fade in inicial
-  setTimeout(() => fade.style.opacity = 0, 50);
-
-  // Carrega audios
-  await loadAudioFiles();
-
   const response = await fetch('puzzle.json'); // Lê o JSON
   puzzleConfig = await response.json();
 
@@ -80,8 +58,6 @@ async function initPuzzle() {
     tile.style.transform = `translate(${x * pieceSize}px, ${y * pieceSize}px)`;
     tile.dataset.x = x;
     tile.dataset.y = y;
-    tile.dataset.correctX = x;
-    tile.dataset.correctY = y;
     tile.style.backgroundImage = `url('${puzzleConfig.imagem}')`;
     tile.style.backgroundPosition = `-${x * pieceSize}px -${y * pieceSize}px`;
     tile.addEventListener('click', () => moveTile(tile, pieceSize));
@@ -92,23 +68,6 @@ async function initPuzzle() {
   shuffle(pieceSize, size);
 }
 
-// Carrega arquivos rockXX.mp3 existentes
-async function loadAudioFiles() {
-  let i = 1;
-  while(true) {
-    const audioPath = `assets/audiorock/rock${String(i).padStart(2,'0')}.mp3`;
-    try {
-      const res = await fetch(audioPath, {method: 'HEAD'});
-      if(!res.ok) break;
-      audioFiles.push(audioPath);
-      i++;
-    } catch(e) {
-      break;
-    }
-  }
-  audioCount = audioFiles.length;
-}
-
 function moveTile(tile, pieceSize) {
   const x = parseInt(tile.dataset.x);
   const y = parseInt(tile.dataset.y);
@@ -117,14 +76,6 @@ function moveTile(tile, pieceSize) {
     [tile.dataset.x, tile.dataset.y] = [empty.x, empty.y];
     empty.x = x;
     empty.y = y;
-
-    // Toca áudio aleatório
-    if(audioCount > 0) {
-      const audio = new Audio(audioFiles[Math.floor(Math.random()*audioCount)]);
-      audio.play();
-    }
-
-    checkComplete();
   }
 }
 
@@ -136,23 +87,7 @@ function shuffle(pieceSize, size) {
       return (Math.abs(empty.x - x) + Math.abs(empty.y - y)) === 1;
     });
     const tile = movable[Math.floor(Math.random()*movable.length)];
-    const x = parseInt(tile.dataset.x);
-    const y = parseInt(tile.dataset.y);
-    tile.style.transform = `translate(${empty.x * pieceSize}px, ${empty.y * pieceSize}px)`;
-    [tile.dataset.x, tile.dataset.y] = [empty.x, empty.y];
-    empty.x = x;
-    empty.y = y;
-  }
-}
-
-// Checa se o quebra-cabeça está completo
-function checkComplete() {
-  const complete = tiles.every(tile => 
-    parseInt(tile.dataset.x) === parseInt(tile.dataset.correctX) &&
-    parseInt(tile.dataset.y) === parseInt(tile.dataset.correctY)
-  );
-  if(complete) {
-    fade.style.opacity = 1; // Fade out final
+    moveTile(tile, pieceSize);
   }
 }
 
