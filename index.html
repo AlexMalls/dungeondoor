@@ -45,6 +45,13 @@ let tiles = [];
 let empty = {x: 0, y: 0};
 let puzzleConfig = null;
 
+// Lista de sons
+const rockSounds = [
+  'assets/audiorock/rock01.mp3',
+  'assets/audiorock/rock02.mp3',
+  'assets/audiorock/rock03.mp3'
+];
+
 // Função principal
 async function initPuzzle() {
   const response = await fetch('puzzle.json'); 
@@ -86,6 +93,12 @@ function moveTile(tile, pieceSize) {
   if ((Math.abs(empty.x - x) + Math.abs(empty.y - y)) === 1) {
     tile.style.transform = `translate(${empty.x * pieceSize}px, ${empty.y * pieceSize}px)`;
     [tile.dataset.x, tile.dataset.y] = [empty.x, empty.y];
+    
+    // Toca som de pedra aleatório
+    const soundSrc = rockSounds[Math.floor(Math.random() * rockSounds.length)];
+    const audio = new Audio(soundSrc);
+    audio.play();
+
     empty.x = x;
     empty.y = y;
   }
