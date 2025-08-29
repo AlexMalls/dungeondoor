@@ -32,8 +32,6 @@
     z-index:1;
   }
   .tile {
-    width: 100%;
-    height: 100%;
     background-size: 400px 400px;
     cursor: pointer;
     transition: transform 0.2s;
@@ -58,9 +56,7 @@ let audioCount = 0;
 // Função principal
 async function initPuzzle() {
   // Fade in inicial
-  setTimeout(() => {
-    fade.style.opacity = 0;
-  }, 50);
+  setTimeout(() => fade.style.opacity = 0, 50);
 
   const response = await fetch('puzzle.json');
   puzzleConfig = await response.json();
@@ -69,10 +65,9 @@ async function initPuzzle() {
   const pieceSize = 400 / size;
   empty = {x: size-1, y: size-1};
 
-  // Carrega os arquivos de áudio automaticamente
   await loadAudioFiles();
 
-  // Cria as peças
+  // Cria peças
   for (let i = 0; i < size*size -1; i++) {
     const x = i % size;
     const y = Math.floor(i / size);
@@ -83,6 +78,8 @@ async function initPuzzle() {
     tile.style.transform = `translate(${x * pieceSize}px, ${y * pieceSize}px)`;
     tile.dataset.x = x;
     tile.dataset.y = y;
+    tile.dataset.correctX = x;
+    tile.dataset.correctY = y;
     tile.style.backgroundImage = `url('${puzzleConfig.imagem}')`;
     tile.style.backgroundPosition = `-${x * pieceSize}px -${y * pieceSize}px`;
     tile.addEventListener('click', () => moveTile(tile, pieceSize, size));
@@ -93,13 +90,12 @@ async function initPuzzle() {
   shuffle(pieceSize, size);
 }
 
-// Carrega todos os arquivos rockXX.mp3 existentes
+// Carrega arquivos rockXX.mp3
 async function loadAudioFiles() {
   let i = 1;
   while(true) {
     const audioPath = `assets/audiorock/rock${String(i).padStart(2,'0')}.mp3`;
     try {
-      // Testa se o arquivo existe
       const res = await fetch(audioPath, {method: 'HEAD'});
       if(!res.ok) break;
       audioFiles.push(audioPath);
@@ -120,17 +116,17 @@ function moveTile(tile, pieceSize, size) {
     empty.x = x;
     empty.y = y;
 
-    // Toca áudio aleatório
+    // Toca áudio
     if(audioCount > 0) {
       const audio = new Audio(audioFiles[Math.floor(Math.random()*audioCount)]);
       audio.play();
     }
 
-    // Checa se o quebra-cabeça está completo
-    checkComplete(size, pieceSize);
+    checkComplete(size);
   }
 }
 
+// Embaralha sem tocar áudio ou checar conclusão
 function shuffle(pieceSize, size) {
   for (let i = 0; i < 200; i++) {
     const movable = tiles.filter(t => {
@@ -139,28 +135,24 @@ function shuffle(pieceSize, size) {
       return (Math.abs(empty.x - x) + Math.abs(empty.y - y)) === 1;
     });
     const tile = movable[Math.floor(Math.random()*movable.length)];
-    moveTile(tile, pieceSize, size);
+    const x = parseInt(tile.dataset.x);
+    const y = parseInt(tile.dataset.y);
+    tile.style.transform = `translate(${empty.x * pieceSize}px, ${empty.y * pieceSize}px)`;
+    [tile.dataset.x, tile.dataset.y] = [empty.x, empty.y];
+    empty.x = x;
+    empty.y = y;
   }
 }
 
-// Verifica se todas as peças estão no lugar correto
-function checkComplete(size, pieceSize) {
-  let complete = true;
-  for (let i = 0; i < tiles.length; i++) {
-    const x = i % size;
-    const y = Math.floor(i / size);
-    const tile = tiles[i];
-    if(parseInt(tile.dataset.x) !== x || parseInt(tile.dataset.y) !== y) {
-      complete = false;
-      break;
-    }
-  }
-  if(complete) {
-    fade.style.opacity = 1; // Fade out final
-  }
+// Verifica se o quebra-cabeça está completo
+function checkComplete(size) {
+  const complete = tiles.every(tile => 
+    parseInt(tile.dataset.x) === parseInt(tile.dataset.correctX) &&
+    parseInt(tile.dataset.y) === parseInt(tile.dataset.correctY)
+  );
+  if(complete) fade.style.opacity = 1; // Fade out final
 }
 
-// Inicia
 initPuzzle();
 </script>
 
